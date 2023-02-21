@@ -16,7 +16,7 @@ def google_acc():
     return gc
 
 
-group_id = -1001429649964
+group_id = -1001276192397
 bot = telebot.TeleBot(os.environ.get('TELEGRAM_CREDS'))
 gc = google_acc()
 
@@ -24,15 +24,15 @@ gc = google_acc()
 created_polls = {}
 
 
-@repeat(every().monday.at('08:55'), 1)
-@repeat(every().monday.at('10:50'), 2)
-@repeat(every().monday.at('12:35'), 3)
-@repeat(every().tuesday.at('08:55'), 1)
-@repeat(every().tuesday.at('10:50'), 2)
-@repeat(every().tuesday.at('12:35'), 3)
-@repeat(every().wednesday.at('08:55'), 1)
-@repeat(every().wednesday.at('11:55'), 2) # TODO: change to 10:50
-@repeat(every().wednesday.at('12:35'), 3)
+@repeat(every().monday.at('09:20'), 1)
+@repeat(every().monday.at('11:20'), 2)
+@repeat(every().monday.at('13:05'), 3)
+@repeat(every().tuesday.at('09:25'), 1)
+@repeat(every().tuesday.at('11:20'), 2)
+@repeat(every().tuesday.at('13:05'), 3)
+@repeat(every().wednesday.at('09:25'), 1)
+@repeat(every().wednesday.at('11:20'), 2)
+@repeat(every().wednesday.at('13:05'), 3)
 def create_poll(lecture_number):
     question = {
         1: "Перша пара, відмічаємося",
@@ -60,7 +60,7 @@ def handle_poll_response(poll_answer):
     person_id = poll_answer.user.id
 
     if poll_id not in created_polls:
-        print(f'Skipping response to poll, beacause this poll is not registered. Poll answer details: {poll_answer}')
+        print(f'Skipping response to poll, because this poll is not registered. Poll answer details: {poll_answer}')
         return
 
     lecture_date, lecture_number = created_polls[poll_id]
@@ -74,7 +74,7 @@ def handle_poll_response(poll_answer):
         367235871: "Максим Бут"
     }
     if person_id not in students:
-        print(f'Skipping response for lecture #{lecture_number} on {lecture_date}, beacause respondent is not a group student. Poll answer details: {poll_answer}')
+        print(f'Skipping response for lecture #{lecture_number} on {lecture_date}, because respondent is not a group student. Poll answer details: {poll_answer}')
         return
     student_name = students[person_id]
 
@@ -116,12 +116,15 @@ def mark_student_presence(student_name, lecture_date, lecture_number):
 
 
 def do_schedule():
+    print('Starting schedule job...')
     while True:
         run_pending()
+        print(f'Tick at {datetime.now()}')
         time.sleep(1)
 
 
 if __name__ == '__main__':
+    print('Starting bot...')
     thread = Thread(target=do_schedule)
     thread.start()
 
