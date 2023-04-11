@@ -11,8 +11,10 @@ import yaml
 
 
 with open("config.yaml") as inp:
-    CLIENTS = yaml.safe_load(inp)['clients']
-    ADMIN_ID = yaml.safe_load(inp)['admin_id']
+    config = yaml.safe_load(inp)
+    CLIENTS = config['clients']
+    ADMIN_ID = config['admin_id']
+    OPTIONS = config['options']
 
 bot = telebot.TeleBot(os.environ.get('TELEGRAM_CREDS'))
 gc = gspread.service_account(filename=os.environ.get('GSHEETS_CREDS_PATH'))
@@ -38,7 +40,7 @@ class Client:
         date_column = sheet.find(day.strftime("%d.%m.%Y"))
 
         # Lecture cell is `number` columns to the right and one row down from date
-        lecture_cell = sheet.cell(date_column.row + 1, date_column.col + number)
+        lecture_cell = sheet.cell(date_column.row + 1, date_column.col + number - 1)
 
         logger.info(
             f"Lecture cell is row {lecture_cell.row}, "
@@ -48,7 +50,7 @@ class Client:
         return lecture_cell
 
     def mark_student_presence(self, student_name, lecture_date, lecture_number, mark):
-        logger.info(f"Marking student {student_name} as present")
+        logger.info(f"Marking student {student_name} as {mark}")
 
         sheet = self.attendance_sheet(lecture_date)
 
@@ -61,7 +63,7 @@ class Client:
         sheet.update_cell(row_idx, col_idx, mark)
 
         logger.info(
-            f"Marked student {student_name} as present in sheet {sheet.title} "
+            f"Marked student {student_name} as {mark} in sheet {sheet.title} "
             f"at row {row_idx}, column {column_idx_to_letter(col_idx)}"
         )
     
@@ -132,14 +134,7 @@ def create_poll_for_client(client, lecture_number, day=None):
     response = bot.send_poll(
         chat_id=client.chat_id, 
         question=question,
-        options=[
-            "✅ Є",
-            "🏃 Запізнююся",
-            "⚠ Немає через тривогу",
-            "⚡ Відключили світло",
-            "🤮 Хворію",
-            "❌ Немає"
-        ], 
+        options=[option['text'] for option in OPTIONS], 
         is_anonymous=False, 
         type='quiz', 
         correct_option_id=0
@@ -183,8 +178,7 @@ def handle_poll_response(poll_answer):
     student_name = students[person_id]
 
     client.mark_student_presence(
-        #TODO: better way of retireving emoji, than just taking the first char
-        student_name, lecture_date, lecture_number, response[0]
+        student_name, lecture_date, lecture_number, OPTIONS[response]['emoji']
     )
 
 
@@ -197,12 +191,14 @@ def handle_poll_creation(message):
         return
     logger.info(f"Received a /create_poll: {message}")
 
-    clientname, lecture_number, day = message.text.split()[1:]
-    client = Client(CLIENTS[clientname])
-    create_poll_for_client(client, lecture_number, day)
+    clientname, lecture_number, year, month, day = message.text.split()[1:]
+    client = Client(**[c for c in CLIENTS if c['title'] == clientname][0])
+    create_poll_for_client(
+        client, int(lecture_number), day=date(int(year), int(month), int(day))
+    )
 
 
-@bot.message_handler
+@bot.message_handler(func=lambda m: True)
 def handle_message(message):
     logger.info(f"Received a message: {message}")
 
