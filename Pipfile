@@ -9,6 +9,7 @@ gspread = "*"
 gspread-dataframe = "*"
 google-auth = "*"
 schedule = "*"
+pyyaml = "*"
 
 [dev-packages]
 

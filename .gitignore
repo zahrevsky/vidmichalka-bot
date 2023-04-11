@@ -1,2 +1,3 @@
 .env
 gsheets_creds.json
+config.yaml
